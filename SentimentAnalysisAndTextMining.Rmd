@@ -7,6 +7,17 @@ author: Joshua Eklund
 output: pdf_document
 ---
 
+```{r}
+# load in libraries
+
+library(tidyverse)
+library(tidytext)
+library(glue)
+library(stringr)
+library(knitr)
+library(tm)
+library(wordcloud)
+```
 
 ```{r}
 ########
@@ -16,14 +27,6 @@ output: pdf_document
 ########
 ```
 
-
-```{r}
-#Load Libraries Used for Sentiment Analysis
-library(tidyverse)
-library(tidytext)
-library(glue)
-library(stringr)
-```
 
 ```{r}
 # Create Sentiment Analysis Functions
