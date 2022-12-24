@@ -1,0 +1,254 @@
+---
+title: "Using Sentiment and Correlational Analyses to
+Examine How Federal Open Market Committee
+Statements Affect The United States Economy and
+Financial Markets"
+author: Joshua Eklund
+output: pdf_document
+---
+
+
+```{r}
+########
+
+# Perform Sentiment Analysis on FOMC Statement Sentiments
+
+########
+```
+
+
+```{r}
+#Load Libraries Used for Sentiment Analysis
+library(tidyverse)
+library(tidytext)
+library(glue)
+library(stringr)
+```
+
+```{r}
+# Create Sentiment Analysis Functions
+# Create sentiment dataframe
+sentiments <- data_frame()
+
+
+# Gets the sentiment of all the files in a directory and adds the sentiment to the sentiments data frame
+getStatementSentiment <- function(directory) {
+  files <- list.files(directory)
+  for(i in files){
+    sentiments <<- rbind(sentiments, calculateSentiment(paste(directory, "/", sep=""), i))
+  }
+}
+
+
+# Calculates the sentiment of a given file inside the specified directory
+calculateSentiment <- function(directory, file) {
+    
+    # Get the file
+    fileName <- glue(directory, file, sep = "")
+    # Get rid of any  trailing spaces
+    fileName <- trimws(fileName)
+    # Read in the new file
+    fileText <- glue(read_file(fileName))
+    # Remove any dollar signs (they're special characters in R)
+    fileText <- gsub("\\$", "", fileText) 
+
+    # Tokenize
+    tokens <- data_frame(text = fileText) %>% unnest_tokens(word, text)
+
+    # get the sentiment from the first text: 
+    sentiment <- tokens %>%
+      inner_join(get_sentiments("bing")) %>% # Pull out only sentiment words
+      count(sentiment) %>% # Count the # of positive & negative words
+      spread(sentiment, n, fill = 0) %>% # Make data wide rather than narrow
+      mutate(sentiment = positive - negative) %>% # # of positive words - # of negative words
+      mutate(sentimentIndex = sentiment/(positive+negative)) %>%
+      mutate(file = file) %>% # Get the file name
+      mutate(year = as.numeric(str_match(file, "\\d{4}"))) %>% # Add the year that the statement was released in
+      mutate(month = match(str_extract(file,"^[a-zA-Z]+"), month.name)) # Add the month that the statement was released in
+    return(sentiment)
+}
+```
+
+
+```{r, warning=FALSE, message=FALSE}
+#Calculate the sentiment index for each statement
+
+#2017 Statements
+getStatementSentiment("~/R/Sentiment Analysis of FOMC Statements/FOMC Statements (TXT)/2017 Text Statements")
+
+#2018 Statements
+getStatementSentiment("~/R/Sentiment Analysis of FOMC Statements/FOMC Statements (TXT)/2018 Text Statements")
+
+#2019 Statements
+getStatementSentiment("~/R/Sentiment Analysis of FOMC Statements/FOMC Statements (TXT)/2019 Text Statements")
+
+#2020 Statements
+getStatementSentiment("~/R/Sentiment Analysis of FOMC Statements/FOMC Statements (TXT)/2020 Text Statements")
+
+#2021 Statements
+getStatementSentiment("~/R/Sentiment Analysis of FOMC Statements/FOMC Statements (TXT)/2021 Text Statements")
+
+#2022 Statements
+getStatementSentiment("~/R/Sentiment Analysis of FOMC Statements/FOMC Statements (TXT)/2022 Text Statements")
+```
+
+
+
+```{r}
+#Create Summary Statistics for FOMC Statement Sentiment
+
+#Graph of FOMC Sentiment Over Time
+ggplot(sentiments, aes(x = as.numeric(year), y = sentimentIndex)) + geom_point() + 
+  geom_smooth(method = "auto") + labs(x= "Year", y= "Sentiment Index", title="FOMC Statement Sentiment Over Time")
+
+hist(sentiments$sentimentIndex, xlab="Sentiment Index", main="Histogram of Sentiment Index")
+
+#Table of FOMC Sentiment Over Time
+sentimentTable <- sentiments %>% group_by(year) %>% dplyr::summarize(meanSentimentIndex = mean(sentimentIndex), medianSentimentIndex=median(sentimentIndex))
+kable(sentimentTable, col.names=c("Year", "Mean SI", "Median SI"))
+```
+
+```{r}
+########
+
+# Create Word Clouds for FOMC Statements
+
+########
+```
+
+```{r}
+#Create text mining functions used for creating the word clouds
+
+#Create document term matrix 
+createDTM <- function(directory){
+  
+  #Create corpus
+  corpus <- VCorpus(DirSource(directory, pattern = ".pdf"), 
+                               readerControl = list(reader = readPDF))
+  
+  #Make Document term matrix
+  statements <-  tm_map(corpus, removePunctuation)
+  statements<- tm_map(statements, removeWords, stopwords("english"))
+  documentMatrix <-  DocumentTermMatrix(statements)
+  
+  #Create Global Variable
+  assign(paste0("documentMatrix", str_extract(directory, "[0-9]+")), documentMatrix, envir = .GlobalEnv)
+}
+
+#Create word frequency table
+#createWordFrequencyTable <- function(dtm) {
+  
+  #wordFrequencies <- colSums(as.matrix(dtm))
+  #length(wordFrequencies)
+
+  # create sort order (descending) for matrix
+  #ord <- order(wordFrequencies, decreasing=TRUE)
+
+  # get the top 20 words by frequency
+  #wordFrequencies[head(ord, 20)] %>% 
+  #kable()
+#}
+
+#Create Word Cloud
+createWordCloud <- function(directory) {
+  
+  #Create corpus
+  corpus <- VCorpus(DirSource(directory, pattern = ".pdf"), 
+                               readerControl = list(reader = readPDF))
+  
+  #Make Document term matrix
+  statements <-  tm_map(corpus, removePunctuation)
+  statements <- tm_map(statements, removeWords, stopwords("english"))
+  
+  tdm <- TermDocumentMatrix(statements) 
+  matrix <- as.matrix(tdm) 
+  words <- sort(rowSums(matrix),decreasing=TRUE) 
+  df <- data.frame(word = names(words),freq=words)
+
+  set.seed(1234) # for reproducibility
+  wordcloud(words = df$word, freq = df$freq, min.freq = 1,
+          max.words=200, random.order=FALSE, rot.per=0.35,
+          colors=brewer.pal(8, "Dark2"))
+}
+```
+
+```{r}
+#Text mine 2017 Statements
+directory <- "~/R/Sentiment Analysis of FOMC Statements/FOMC Statements (PDF)/2017 Statements"
+createDTM(directory)
+#inspect(documentMatrix2017)
+#createWordFrequencyTable(documentMatrix2017)
+createWordCloud(directory)
+
+#Text mine 2018 Statements
+directory <- "~/R/Sentiment Analysis of FOMC Statements/FOMC Statements (PDF)/2018 Statements"
+createDTM(directory)
+#inspect(documentMatrix2018)
+createWordFrequencyTable(documentMatrix2018)
+createWordCloud(directory)
+
+#Text mine 2019 statements
+directory <- "~/R/StatsSeniorSem/FOMC Statements (PDF)/2019 Statements"
+createDTM(directory)
+#inspect(documentMatrix2019)
+createWordFrequencyTable(documentMatrix2019)
+createWordCloud(directory)
+
+#Text mine 2020 statements
+directory <- "~/R/StatsSeniorSem/FOMC Statements (PDF)/2020 Statements"
+createDTM(directory)
+#inspect(documentMatrix2020)
+createWordFrequencyTable(documentMatrix2020)
+createWordCloud(directory)
+
+#Text mine 2021 statements
+directory <- "~/R/StatsSeniorSem/FOMC Statements (PDF)/2021 Statements"
+createDTM(directory)
+#inspect(documentMatrix2021)
+createWordFrequencyTable(documentMatrix2021)
+createWordCloud(directory)
+
+#Text mine 2022 statements
+directory <- "~/R/StatsSeniorSem/FOMC Statements (PDF)/2022 Statements"
+createDTM(directory)
+#inspect(documentMatrix2021)
+createWordFrequencyTable(documentMatrix2022)
+createWordCloud(directory)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
