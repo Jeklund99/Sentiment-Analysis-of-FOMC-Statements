@@ -95,17 +95,20 @@ getStatementSentiment("~/R/Sentiment Analysis of FOMC Statements/FOMC Statements
 
 
 ```{r}
-#Create Summary Statistics for FOMC Statement Sentiment
+# Create Summary Statistics for FOMC Statement Sentiment
 
-#Graph of FOMC Sentiment Over Time
+# Graph of FOMC Sentiment Over Time
 ggplot(sentiments, aes(x = as.numeric(year), y = sentimentIndex)) + geom_point() + 
   geom_smooth(method = "auto") + labs(x= "Year", y= "Sentiment Index", title="FOMC Statement Sentiment Over Time")
 
 hist(sentiments$sentimentIndex, xlab="Sentiment Index", main="Histogram of Sentiment Index")
 
-#Table of FOMC Sentiment Over Time
+# Table of FOMC Sentiment Over Time
 sentimentTable <- sentiments %>% group_by(year) %>% dplyr::summarize(meanSentimentIndex = mean(sentimentIndex), medianSentimentIndex=median(sentimentIndex))
 kable(sentimentTable, col.names=c("Year", "Mean SI", "Median SI"))
+
+# Check normality of sentiment index 
+with(sentiments, shapiro.test(sentimentIndex))
 ```
 
 ```{r}
@@ -184,69 +187,561 @@ createWordCloud(directory)
 directory <- "~/R/Sentiment Analysis of FOMC Statements/FOMC Statements (PDF)/2018 Statements"
 createDTM(directory)
 #inspect(documentMatrix2018)
-createWordFrequencyTable(documentMatrix2018)
+#createWordFrequencyTable(documentMatrix2018)
 createWordCloud(directory)
 
 #Text mine 2019 statements
 directory <- "~/R/StatsSeniorSem/FOMC Statements (PDF)/2019 Statements"
 createDTM(directory)
 #inspect(documentMatrix2019)
-createWordFrequencyTable(documentMatrix2019)
+#createWordFrequencyTable(documentMatrix2019)
 createWordCloud(directory)
 
 #Text mine 2020 statements
 directory <- "~/R/StatsSeniorSem/FOMC Statements (PDF)/2020 Statements"
 createDTM(directory)
 #inspect(documentMatrix2020)
-createWordFrequencyTable(documentMatrix2020)
+#createWordFrequencyTable(documentMatrix2020)
 createWordCloud(directory)
 
 #Text mine 2021 statements
 directory <- "~/R/StatsSeniorSem/FOMC Statements (PDF)/2021 Statements"
 createDTM(directory)
 #inspect(documentMatrix2021)
-createWordFrequencyTable(documentMatrix2021)
+#createWordFrequencyTable(documentMatrix2021)
 createWordCloud(directory)
 
 #Text mine 2022 statements
 directory <- "~/R/StatsSeniorSem/FOMC Statements (PDF)/2022 Statements"
 createDTM(directory)
 #inspect(documentMatrix2021)
-createWordFrequencyTable(documentMatrix2022)
+#createWordFrequencyTable(documentMatrix2022)
 createWordCloud(directory)
 ```
 
+```{r}
+########
+
+# Load in and analyze CPI data
+
+########
+```
+
+```{r}
+#Bring in CPI Data
+#cpiData<- read_csv("~/R/StatsSeniorSem/CPIData/CPIData.csv")
+cpiDataTall<- read_csv("~/R/Sentiment Analysis of FOMC Statements/CPI Data/CPIDataTall.csv")
+cpiDataTall$Month = factor(cpiDataTall$Month, levels = month.abb)
+cpiDataTall$monthNum <- match(cpiDataTall$Month, month.abb)
+```
+
+```{r}
+# Get the CPI Value associated with the month after a statement's release date
+
+# Create nextMonthCPI variable
+sentiments$nextMonthCPI <- NA
+
+# Loop through each statement in the sentiments data base
+for(i in 1:nrow(sentiments)) {
+  
+  # Get month and year of meeting
+  year = as.numeric(sentiments[i, "year"]) # Get year of FOMC statement 
+  month = as.numeric(sentiments[i, "month"]) # Get month that statement was released
+  month = month + 1
+  
+  # Wrap month appropriately
+  if(month == 13) {
+    month = 1
+    year = year + 1
+  }
+  
+  # Filter CPI Data to find the month after the FOMC statement release
+  nextMonthCPI <- cpiDataTall %>% filter(Year == year) %>% filter(monthNum == month)
+  
+  # Add value to sentiments data frame
+  sentiments[i, "nextMonthCPI"] <- nextMonthCPI[1, "CPI"]
+}
+```
+
+```{r}
+# Get the CPI value associated with the month before a statement's release date
+
+# Create previousMonthCPI variable
+sentiments$previousMonthCPI <- NA
+
+# Loop through each statement in the sentiments data base
+for(i in 1:nrow(sentiments)) {
+  
+  #Get month and year of meeting
+  year = as.numeric(sentiments[i, "year"])
+  month = as.numeric(sentiments[i, "month"])
+  month = month - 1
+  
+  # Wrap month value appropriately
+  if(month == 0) {
+    month = 12
+    year = year - 1
+  }
+  
+  # Filter CPI data to find the month after the FOMC statement release
+  previousMonthCPI <- cpiDataTall %>% filter(Year == year) %>% filter(month == month)
+  
+  # Add value to the sentiments data frame
+  sentiments[i, "previousMonthCPI"] <- previousMonthCPI[1, "CPI"]
+}
+```
+
+```{r}
+# Create summary statistics for the CPI data
+
+# Graph of CPI over time
+ggplot(cpiDataTall, aes(x = as.numeric(Year), y = CPI)) + geom_point() + 
+  geom_smooth(method = "auto") + labs(x= "Year", y= "Consumer Price Index", title = "Consumer Price Index Over Time")
+
+# Plot distribution of CPI data
+hist(cpiDataTall$CPI, xlab="Consumer Price Index", main="Histogram of CPI Data")
+
+# Table of CPI over time
+cpiYearly <- cpiDataTall %>% group_by(Year) %>% dplyr::summarize(meanCPI = mean(CPI, na.rm=TRUE), medianCPI = median(CPI, na.rm=TRUE))
+kable(cpiYearly)
+
+# Plot distribution of nextMonthCPI variable
+hist(sentiments$nextMonthCPI, xlab="nextMonthCPI", main="Histogram of nextMonthCPI")
+# Check normality of the nextMonthCPI variable
+with(sentiments, shapiro.test(nextMonthCPI))
+
+# Plot distribution of previousMonthCPI variable
+hist(sentiments$previousMonthCPI, xlab="previousMonthCPI", main="Histogram of previousMonthCPI")
+# Check normality of the previousMonthCPI variable
+with(sentiments, shapiro.test(previousMonthCPI))
+```
+
+```{r}
+# Examine correlation between previousMonthCPI and SentimentIndex
+
+# Plot previousMonthCPI vs sentimentIndex
+ggplot(sentiments, aes(x = sentimentIndex, y = previousMonthCPI)) + geom_point() + geom_smooth(method = "auto") + labs(x= "Sentiment Index", y= "Previous Month CPI", title = "Previous Month CPI vs Sentiment Index")
+
+# Calculate correlation coefficients
+with(sentiments, cor.test(sentimentIndex, previousMonthCPI, use = "complete", method="pearson"))
+with(sentiments, cor.test(sentimentIndex, previousMonthCPI, use = "complete", method="kendall"))
+with(sentiments, cor.test(sentimentIndex, previousMonthCPI, use = "complete", method="spearman"))
+```
+
+```{r}
+# Examine correlation between nextMonthCPI and sentimentIndex
+
+# Plot nextMonthCPI vs sentimentIndex
+ggplot(sentiments, aes(x = sentimentIndex, y = nextMonthCPI)) + geom_point() + geom_smooth(method = "auto") + labs(x= "Sentiment Index", y= "Next Month CPI", title = "Next Month CPI vs Sentiment Index")
+
+# Calculate correlation coefficients
+with(sentiments, cor.test(sentimentIndex, nextMonthCPI, use = "complete", method="pearson"))
+with(sentiments, cor.test(sentimentIndex, nextMonthCPI, use = "complete", method="kendall"))
+with(sentiments, cor.test(sentimentIndex, nextMonthCPI, use = "complete", method="spearman"))
+```
+
+```{r}
+# Resampling method for comparing dependent, overlapping correlations
+
+# Function that ompares correlation between previousMonthCPI and nextMonthCPI relative to sentimentIndex calculated using the specified correlation method.
+
+compareCPICoefficients <- function(method) {
+set.seed(2020)
+B <- 999 # number of bootstrap replicates
+n <- nrow(sentiments) # total sample size
+## Initialize an empty vector for bootstrap statistics:
+dstar <- rep(NA, B)
+
+## Run the bootstrap procedure:
+for (b in 1:B) {
+    indices <- sample(x = 1:n, size = n, replace = TRUE)
+    bootsample <- sentiments[indices, ]
+    rho1 <- cor(bootsample$sentimentIndex, bootsample$previousMonthCPI, use="complete", method= method)
+    rho2 <- cor(bootsample$sentimentIndex, bootsample$nextMonthCPI, use="complete", method= method)
+    dstar[b] <- rho1 - rho2
+}
+
+## Plot histogram and display confidence interval:
+if(method == "pearson") {
+  title = "Pearson"
+}
+else if (method == "kendall"){
+  title = "Kendall"
+}
+
+else {
+  title="Spearman"
+}
+
+title = paste("Difference in", title, sep= " ")
+title = paste(title, "Correlation Coefficients", sep= " " )
+
+hist(dstar, main = title,
+     xlab = "Difference")
+dstar <- sort(dstar) # sort to compute empirical CI
+abline(v = dstar[c(0.025*B, 0.975*B)], lty = 2, col = "blue")
+dstar[c(0.025*B, 0.975*B)]
+}
+
+# Run function
+compareCPICoefficients("pearson")
+compareCPICoefficients("kendall")
+compareCPICoefficients("spearman")
+```
+
+```{r}
+########
+
+# Load in and analyze NFCI and ANFCI data
+
+########
+```
 
 
+```{r}
+# Bring in NFCI Data
+nfci<- read_csv("~/R/Sentiment Analysis of FOMC Statements/NFCI Data/NFCI.csv")
+
+# Create year variable in NFCI data base
+nfci$year <- str_extract(nfci$Date, "[0-9]{4}")
+
+# Bring in sentiments data base that has the meetingDateFriday variable
+sentiments <- read_csv("~/R/Sentiment Analysis of FOMC Statements/Sentiment Friday/MeetingDateFriday.csv")
+```
+
+```{r}
+# Create summary statistics for NFCI and ANFCI
+
+# Filter data to years we are interested in
+nfciFiltered <- nfci %>% filter(year == "2017" | year == "2018" | year == "2019" | year == "2020" | year == "2021" | year == "2022")
+
+# Graph NFCI over time
+ggplot(nfciFiltered, aes(x = as.numeric(year), y = NFCI)) + geom_point() + 
+  geom_smooth(method = "auto") + labs(x="Year", title="NFCI Over Time")
+
+# Plot distribution of NFCI data
+hist(nfciFiltered$NFCI, main="Histogram of NFCI", xlab="NFCI")
+
+# Create Summary Statistics Table for NFCI
+nfciTable <- nfciFiltered %>% group_by(year) %>% dplyr::summarize(meanNFCI = mean(NFCI), medianNFCI = median(NFCI))
+kable(nfciTable)
+
+# Graph ANFCI over time
+ggplot(nfciFiltered, aes(x = as.numeric(year), y = ANFCI)) + geom_point() + 
+  geom_smooth(method = "auto") + labs(x="Year", title="ANFCI Over Time")
+
+# Plot distribution of ANFCI
+hist(nfciFiltered$ANFCI, main="Histogram of ANFCI", xlab = "ANFCI")
+
+# Create summary statistics table for ANFCI
+anfciTable <- nfciFiltered %>% group_by(year) %>% dplyr::summarize(meanANFCI = mean(ANFCI), medianANFCI = median(ANFCI))
+kable(anfciTable)
+```
+
+```{r}
+# For each FOMC meeting, get previous week's and next week's NFCI and ANFCI
+
+# Create previous week variables
+sentiments$previousWeekNFCI <- NA
+sentiments$previousWeekANFCI <- NA
+
+# Create next week variables
+sentiments$nextWeekNFCI <- NA
+sentiments$nextWeekANFCI <- NA
+
+# Loop through sentiments data 
+for(i in 1:nrow(sentiments)) {
+  
+  # Grab the Friday of the week that the statement was released
+  meetingDateFriday = sentiments[i, "meetingDateFriday"]
+  
+  # Grab the year that the statement was released in
+  year = as.character(sentiments[i, "year"])
+  
+  # Filter NFCI data to year that the statement was released in
+  nfciData <- nfci %>% filter(year == year)
+  
+  # Loop through NFCI data
+  for(j in 1:nrow(nfciData)) {
+    
+    # Check if the observation in the NFCI data has the same date as the meetingDateFriday
+    if(nfciData[j, "Date"]== meetingDateFriday) {
+      
+      # Grab previous week NFCI and ANFCI
+      previousWeekNFCI = nfciData[j-1, "NFCI"]
+      previousWeekANFCI = nfciData[j-1, "ANFCI"]
+      
+      # Add values to sentiments data set
+      sentiments[i, "previousWeekNFCI"] <- previousWeekNFCI
+      sentiments[i, "previousWeekANFCI"] <- previousWeekANFCI
+      
+      # Grab next week NFCI and ANFCI
+      nextWeekNFCI = nfciData[j+1, "NFCI"]
+      nextWeekANFCI = nfciData[j+1, "ANFCI"]
+      
+      # Add values to sentiments data set
+      sentiments[i, "nextWeekNFCI"] <- nextWeekNFCI
+      sentiments[i, "nextWeekANFCI"] <- nextWeekANFCI
+    break
+    }
+  }
+}
+```
+
+```{r}
+# Create summary statistics for previous and next week NFCI and ANFCI
+
+# Check distributions
+hist(sentiments$previousWeekNFCI)
+hist(sentiments$previousWeekANFCI)
+hist(sentiments$nextWeekNFCI)
+hist(sentiments$nextWeekANFCI)
+
+# Check non-normality
+with(sentiments, shapiro.test(previousWeekNFCI))
+with(sentiments, shapiro.test(previousWeekANFCI))
+with(sentiments, shapiro.test(nextWeekNFCI))
+with(sentiments, shapiro.test(nextWeekANFCI))
+```
+
+```{r}
+# Examine correlation between previousWeekNFCI, previousWeekANFCI, nextWeekNFCI, and nextWeekANFCI
+
+# Plot Previous week NFCI vs Sentiment Index
+ggplot(sentiments, aes(x = sentimentIndex, y = previousWeekNFCI)) + geom_point() + 
+  geom_smooth(method = "auto") + labs(x="Sentiment Index", y="Previous Week NFCI", title="Previous Week NFCI vs Sentiment Index")
 
 
+# Plot Next week NFCI vs Sentiment Index
+ggplot(sentiments, aes(x = sentimentIndex, y = nextWeekNFCI)) + geom_point() + 
+  geom_smooth(method = "auto") + labs(x="Sentiment Index", y="Next Week NFCI", title="Next Week NFCI vs Sentiment Index")
 
 
+# Plot Previous week ANFCI vs Sentiment Index
+ggplot(sentiments, aes(x = sentimentIndex, y = previousWeekANFCI)) + geom_point() + 
+  geom_smooth(method = "auto") + labs(x="Sentiment Index", y="Previous Week ANFCI", title="Previous Week ANFCI vs Sentiment Index")
 
 
+# Plot Next week ANFCI vs Sentiment Index
+ggplot(sentiments, aes(x = sentimentIndex, y = nextWeekANFCI)) + geom_point() + 
+  geom_smooth(method = "auto") + labs(x="Sentiment Index", y="Next Week ANFCI", title="Next Week ANFCI vs Sentiment Index")
 
+# Perform correlational Analysis
 
+# Previous Week NFCI
+with(sentiments, cor.test(sentimentIndex, previousWeekNFCI, use = "complete", method="pearson"))
+with(sentiments, cor.test(sentimentIndex, previousWeekNFCI, use = "complete", method="kendall"))
+with(sentiments, cor.test(sentimentIndex, previousWeekNFCI, use = "complete", method="spearman"))
 
+# Next Week NFCI
+with(sentiments, cor.test(sentimentIndex, nextWeekNFCI, use = "complete", method="pearson"))
+with(sentiments, cor.test(sentimentIndex, nextWeekNFCI, use = "complete", method="kendall"))
+with(sentiments, cor.test(sentimentIndex, nextWeekNFCI, use = "complete", method="spearman"))
 
+# Previous Week ANFCI
+with(sentiments, cor.test(sentimentIndex, previousWeekANFCI, use = "complete", method="pearson"))
+with(sentiments, cor.test(sentimentIndex, previousWeekANFCI, use = "complete", method="kendall"))
+with(sentiments, cor.test(sentimentIndex, previousWeekANFCI, use = "complete", method="spearman"))
 
+# Next Week ANFCI
+with(sentiments, cor.test(sentimentIndex, nextWeekANFCI, use = "complete", method="pearson"))
+with(sentiments, cor.test(sentimentIndex, nextWeekANFCI, use = "complete", method="kendall"))
+with(sentiments, cor.test(sentimentIndex, nextWeekANFCI, use = "complete", method="spearman"))
+```
 
+```{r}
+# Resampling method for comparing dependent, overlapping correlations
 
+# Function that compares previousWeekNFCI and nextWeekNFCI correlations relative to the sentiment index
 
+compareNFCICoefficients <- function(method) {
+set.seed(2020)
+B <- 999 # number of bootstrap replicates
+n <- nrow(sentiments) # total sample size
+## Initialize an empty vector for bootstrap statistics:
+dstar <- rep(NA, B)
 
+## Run the bootstrap procedure:
+for (b in 1:B) {
+    indices <- sample(x = 1:n, size = n, replace = TRUE)
+    bootsample <- sentiments[indices, ]
+    rho1 <- cor(bootsample$sentimentIndex, bootsample$previousWeekNFCI, use="complete", method= method)
+    rho2 <- cor(bootsample$sentimentIndex, bootsample$nextWeekNFCI, use="complete", method= method)
+    dstar[b] <- rho1 - rho2
+}
 
+## Plot histogram and display confidence interval:
+if(method == "pearson") {
+  title = "Pearson"
+}
+else if (method == "kendall"){
+  title = "Kendall"
+}
 
+else {
+  title="Spearman"
+}
 
+title = paste("Difference in", title, sep= " ")
+title = paste(title, "Correlation Coefficients", sep= " " )
 
+hist(dstar, main = title,
+     xlab = "Difference")
+dstar <- sort(dstar) # sort to compute empirical CI
+abline(v = dstar[c(0.025*B, 0.975*B)], lty = 2, col = "blue")
+dstar[c(0.025*B, 0.975*B)]
+}
 
+# Run function
+compareNFCICoefficients("pearson")
+compareNFCICoefficients("kendall")
+compareNFCICoefficients("spearman")
+```
 
+```{r}
+# Resampling method for comparing dependent, overlapping correlations
 
+# Function that compares previousWeekANFCI and nextWeekANFCI correlations relative to the sentiment index
 
+compareANFCICoefficients <- function(method) {
+set.seed(2020)
+B <- 999 # number of bootstrap replicates
+n <- nrow(sentiments) # total sample size
+## Initialize an empty vector for bootstrap statistics:
+dstar <- rep(NA, B)
 
+## Run the bootstrap procedure:
+for (b in 1:B) {
+    indices <- sample(x = 1:n, size = n, replace = TRUE)
+    bootsample <- sentiments[indices, ]
+    rho1 <- cor(bootsample$sentimentIndex, bootsample$previousWeekANFCI, use="complete", method= method)
+    rho2 <- cor(bootsample$sentimentIndex, bootsample$nextWeekANFCI, use="complete", method= method)
+    dstar[b] <- rho1 - rho2
+}
 
+## Plot histogram and display confidence interval:
+if(method == "pearson") {
+  title = "Pearson"
+}
+else if (method == "kendall"){
+  title = "Kendall"
+}
 
+else {
+  title="Spearman"
+}
 
+title = paste("Difference in", title, sep= " ")
+title = paste(title, "Correlation Coefficients", sep= " " )
 
+hist(dstar, main = title,
+     xlab = "Difference")
+dstar <- sort(dstar) # sort to compute empirical CI
+abline(v = dstar[c(0.025*B, 0.975*B)], lty = 2, col = "blue")
+dstar[c(0.025*B, 0.975*B)]
+}
 
+# Run function
+compareANFCICoefficients("pearson")
+compareANFCICoefficients("kendall")
+compareANFCICoefficients("spearman")
+```
+
+```{r}
+# Resampling method for comparing dependent, overlapping correlations
+
+# Function that compares previousWeekANFCI and previousWeekNFCI correlations relative to the sentiment index
+
+comparePreviousWeekANFCINFCICoefficients <- function(method) {
+set.seed(2020)
+B <- 999 # number of bootstrap replicates
+n <- nrow(sentiments) # total sample size
+## Initialize an empty vector for bootstrap statistics:
+dstar <- rep(NA, B)
+
+## Run the bootstrap procedure:
+for (b in 1:B) {
+    indices <- sample(x = 1:n, size = n, replace = TRUE)
+    bootsample <- sentiments[indices, ]
+    rho1 <- cor(bootsample$sentimentIndex, bootsample$previousWeekANFCI, use="complete", method= method)
+    rho2 <- cor(bootsample$sentimentIndex, bootsample$previousWeekNFCI, use="complete", method= method)
+    dstar[b] <- rho1 - rho2
+}
+
+## Plot histogram and display confidence interval:
+if(method == "pearson") {
+  title = "Pearson"
+}
+else if (method == "kendall"){
+  title = "Kendall"
+}
+
+else {
+  title="Spearman"
+}
+
+title = paste("Difference in", title, sep= " ")
+title = paste(title, "Correlation Coefficients", sep= " " )
+
+hist(dstar, main = title,
+     xlab = "Difference")
+dstar <- sort(dstar) # sort to compute empirical CI
+abline(v = dstar[c(0.025*B, 0.975*B)], lty = 2, col = "blue")
+dstar[c(0.025*B, 0.975*B)]
+}
+
+comparePreviousWeekANFCINFCICoefficients("pearson")
+comparePreviousWeekANFCINFCICoefficients("kendall")
+comparePreviousWeekANFCINFCICoefficients("spearman")
+```
+
+```{r}
+# Resampling method for comparing dependent, overlapping correlations
+
+# Function that compares nextWeekANFCI and nextWeekNFCI correlations relative to the sentiment index
+compareNextWeekANFCINFCICoefficients <- function(method) {
+set.seed(2020)
+B <- 999 # number of bootstrap replicates
+n <- nrow(sentiments) # total sample size
+## Initialize an empty vector for bootstrap statistics:
+dstar <- rep(NA, B)
+
+## Run the bootstrap procedure:
+for (b in 1:B) {
+    indices <- sample(x = 1:n, size = n, replace = TRUE)
+    bootsample <- sentiments[indices, ]
+    rho1 <- cor(bootsample$sentimentIndex, bootsample$nextWeekANFCI, use="complete", method= method)
+    rho2 <- cor(bootsample$sentimentIndex, bootsample$nextWeekNFCI, use="complete", method= method)
+    dstar[b] <- rho1 - rho2
+}
+
+## Plot histogram and display confidence interval:
+if(method == "pearson") {
+  title = "Pearson"
+}
+else if (method == "kendall"){
+  title = "Kendall"
+}
+
+else {
+  title="Spearman"
+}
+
+title = paste("Difference in", title, sep= " ")
+title = paste(title, "Correlation Coefficients", sep= " " )
+
+hist(dstar, main = title,
+     xlab = "Difference")
+dstar <- sort(dstar) # sort to compute empirical CI
+abline(v = dstar[c(0.025*B, 0.975*B)], lty = 2, col = "blue")
+dstar[c(0.025*B, 0.975*B)]
+}
+
+# Run function
+compareNextWeekANFCINFCICoefficients("pearson")
+compareNextWeekANFCINFCICoefficients("kendall")
+compareNextWeekANFCINFCICoefficients("spearman")
+```
 
 
 
