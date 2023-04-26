@@ -97,7 +97,13 @@ getStatementSentiment("~/R/Sentiment Analysis of FOMC Statements/FOMC Statements
 getStatementSentiment("~/R/Sentiment Analysis of FOMC Statements/FOMC Statements (TXT)/2022 Text Statements")
 ```
 
-
+```{r}
+#Modify Sentiments Database to include a month variable, both name and numeric value
+#Extracted from the file name using a regex
+sentiments$month <-  str_extract(sentiments$file,"^[a-zA-Z]+")
+sentiments$month = factor(sentiments$month, levels = month.name)
+sentiments$monthNum <- match(sentiments$month, month.name)
+```
 
 ```{r}
 # Create Summary Statistics for FOMC Statement Sentiment
@@ -283,27 +289,21 @@ for(i in 1:nrow(sentiments)) {
 ```{r}
 # Get the CPI value associated with the month before a statement's release date
 
-# Create previousMonthCPI variable
+#For each row in the  database (Meeting), get the CPI value associated with the month before the meeting
 sentiments$previousMonthCPI <- NA
-
-# Loop through each statement in the sentiments data base
 for(i in 1:nrow(sentiments)) {
   
   #Get month and year of meeting
   year = as.numeric(sentiments[i, "year"])
-  month = as.numeric(sentiments[i, "month"])
+  month = as.numeric(sentiments[i, "monthNum"])
   month = month - 1
   
-  # Wrap month value appropriately
   if(month == 0) {
     month = 12
     year = year - 1
   }
   
-  # Filter CPI data to find the month after the FOMC statement release
-  previousMonthCPI <- cpiDataTall %>% filter(Year == year) %>% filter(month == month)
-  
-  # Add value to the sentiments data frame
+  previousMonthCPI <- cpiDataTall %>% filter(Year == year) %>% filter(monthNum == month)
   sentiments[i, "previousMonthCPI"] <- previousMonthCPI[1, "CPI"]
 }
 ```
