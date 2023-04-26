@@ -115,6 +115,18 @@ with(sentiments, shapiro.test(sentimentIndex))
 ```
 
 ```{r}
+# Produce time series graph of FOMC statement sentiment
+sentiments$date <- str_extract(sentiments$file, "\\d+-\\d+-\\d+")
+sentiments$date <- as.Date(sentiments$date, "%m-%d-%Y")
+ggplot(sentiments, aes(x = date, y = sentimentIndex)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "FOMC Statement Sentiment Over Time (Time Series)", x = "Date", y = "Sentiment Index") +
+  scale_x_date(date_breaks = "2 month", date_labels = "%b %d, %Y") +
+  theme(axis.text.x = element_text(size = 6, angle = 45, hjust = 1))
+```
+
+```{r}
 ########
 
 # Create Word Clouds for FOMC Statements
