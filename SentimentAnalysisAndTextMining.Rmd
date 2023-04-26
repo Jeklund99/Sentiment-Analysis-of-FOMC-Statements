@@ -269,7 +269,7 @@ for(i in 1:nrow(sentiments)) {
   
   # Get month and year of meeting
   year = as.numeric(sentiments[i, "year"]) # Get year of FOMC statement 
-  month = as.numeric(sentiments[i, "month"]) # Get month that statement was released
+  month = as.numeric(sentiments[i, "monthNum"]) # Get month that statement was released
   month = month + 1
   
   # Wrap month appropriately
