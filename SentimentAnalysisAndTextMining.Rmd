@@ -29,6 +29,7 @@ library(wordcloud)
 
 
 ```{r}
+# Sentiment Analysis method based on the following implementation: https://www.kaggle.com/code/rtatman/tutorial-sentiment-analysis-in-r
 # Create Sentiment Analysis Functions
 # Create sentiment dataframe
 sentiments <- data_frame()
@@ -356,7 +357,8 @@ with(sentiments, cor.test(sentimentIndex, nextMonthCPI, use = "complete", method
 ```
 
 ```{r}
-# Resampling method for comparing dependent, overlapping correlations
+# Resampling method for comparing dependent, overlapping correlations based on the code contained in the following website
+# https://f-santos.gitlab.io/2020-04-01-comparing-correlation-coefficients.html
 
 # Function that ompares correlation between previousMonthCPI and nextMonthCPI relative to sentimentIndex calculated using the specified correlation method.
 
@@ -565,7 +567,8 @@ with(sentiments, cor.test(sentimentIndex, nextWeekANFCI, use = "complete", metho
 ```
 
 ```{r}
-# Resampling method for comparing dependent, overlapping correlations
+# Resampling method for comparing dependent, overlapping correlations based on the code contained in the following website
+# https://f-santos.gitlab.io/2020-04-01-comparing-correlation-coefficients.html
 
 # Function that compares previousWeekNFCI and nextWeekNFCI correlations relative to the sentiment index
 
@@ -614,7 +617,8 @@ compareNFCICoefficients("spearman")
 ```
 
 ```{r}
-# Resampling method for comparing dependent, overlapping correlations
+# Resampling method for comparing dependent, overlapping correlations based on the code contained in the following website
+# https://f-santos.gitlab.io/2020-04-01-comparing-correlation-coefficients.html
 
 # Function that compares previousWeekANFCI and nextWeekANFCI correlations relative to the sentiment index
 
@@ -663,7 +667,8 @@ compareANFCICoefficients("spearman")
 ```
 
 ```{r}
-# Resampling method for comparing dependent, overlapping correlations
+# Resampling method for comparing dependent, overlapping correlations based on the code contained in the following website
+# https://f-santos.gitlab.io/2020-04-01-comparing-correlation-coefficients.html
 
 # Function that compares previousWeekANFCI and previousWeekNFCI correlations relative to the sentiment index
 
@@ -711,7 +716,8 @@ comparePreviousWeekANFCINFCICoefficients("spearman")
 ```
 
 ```{r}
-# Resampling method for comparing dependent, overlapping correlations
+# Resampling method for comparing dependent, overlapping correlations based on the code contained in the following website
+# https://f-santos.gitlab.io/2020-04-01-comparing-correlation-coefficients.html
 
 # Function that compares nextWeekANFCI and nextWeekNFCI correlations relative to the sentiment index
 compareNextWeekANFCINFCICoefficients <- function(method) {
