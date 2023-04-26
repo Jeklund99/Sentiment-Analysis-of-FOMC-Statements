@@ -97,7 +97,13 @@ getStatementSentiment("~/R/Sentiment Analysis of FOMC Statements/FOMC Statements
 getStatementSentiment("~/R/Sentiment Analysis of FOMC Statements/FOMC Statements (TXT)/2022 Text Statements")
 ```
 
-
+```{r}
+#Modify Sentiments Database to include a month variable, both name and numeric value
+#Extracted from the file name using a regex
+sentiments$month <-  str_extract(sentiments$file,"^[a-zA-Z]+")
+sentiments$month = factor(sentiments$month, levels = month.name)
+sentiments$monthNum <- match(sentiments$month, month.name)
+```
 
 ```{r}
 # Create Summary Statistics for FOMC Statement Sentiment
