@@ -207,28 +207,28 @@ createDTM(directory)
 createWordCloud(directory)
 
 #Text mine 2019 statements
-directory <- "~/R/StatsSeniorSem/FOMC Statements (PDF)/2019 Statements"
+directory <- "~/R/Sentiment Analysis of FOMC Statements/FOMC Statements (PDF)/2019 Statements"
 createDTM(directory)
 #inspect(documentMatrix2019)
 #createWordFrequencyTable(documentMatrix2019)
 createWordCloud(directory)
 
 #Text mine 2020 statements
-directory <- "~/R/StatsSeniorSem/FOMC Statements (PDF)/2020 Statements"
+directory <- "~/R/Sentiment Analysis of FOMC Statements/FOMC Statements (PDF)/2020 Statements"
 createDTM(directory)
 #inspect(documentMatrix2020)
 #createWordFrequencyTable(documentMatrix2020)
 createWordCloud(directory)
 
 #Text mine 2021 statements
-directory <- "~/R/StatsSeniorSem/FOMC Statements (PDF)/2021 Statements"
+directory <- "~/R/Sentiment Analysis of FOMC Statements/FOMC Statements (PDF)/2021 Statements"
 createDTM(directory)
 #inspect(documentMatrix2021)
 #createWordFrequencyTable(documentMatrix2021)
 createWordCloud(directory)
 
 #Text mine 2022 statements
-directory <- "~/R/StatsSeniorSem/FOMC Statements (PDF)/2022 Statements"
+directory <- "~/R/Sentiment Analysis of FOMC Statements/FOMC Statements (PDF)/2022 Statements"
 createDTM(directory)
 #inspect(documentMatrix2021)
 #createWordFrequencyTable(documentMatrix2022)
