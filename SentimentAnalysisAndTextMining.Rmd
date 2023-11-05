@@ -115,8 +115,8 @@ ggplot(sentiments, aes(x = as.numeric(year), y = sentimentIndex)) + geom_point()
 hist(sentiments$sentimentIndex, xlab="Sentiment Index", main="Histogram of Sentiment Index")
 
 # Table of FOMC Sentiment Over Time
-sentimentTable <- sentiments %>% group_by(year) %>% dplyr::summarize(meanSentimentIndex = mean(sentimentIndex), medianSentimentIndex=median(sentimentIndex))
-kable(sentimentTable, col.names=c("Year", "Mean SI", "Median SI"))
+sentimentTable <- sentiments %>% group_by(year) %>% dplyr::summarize(meanSentimentIndex = mean(sentimentIndex), medianSentimentIndex=median(sentimentIndex), minSentimentIndex = min(sentimentIndex, na.rm = TRUE), maxSentimentIndex = max(sentimentIndex, na.rm = TRUE), sdSentimentIndex = sd(sentimentIndex, na.rm = TRUE), skewnessSentimentIndex = skewness(sentimentIndex, na.rm = TRUE), kurtosisSentimentIndex = kurtosis(sentimentIndex, na.rm = TRUE))
+kable(sentimentTable, col.names=c("Year", "Mean SI", "Median SI", "Min SI", "Max SI", "St.D SI", "Skewness", "Kurtosis"))
 
 # Check normality of sentiment index 
 with(sentiments, shapiro.test(sentimentIndex))
@@ -319,7 +319,7 @@ ggplot(cpiDataTall, aes(x = as.numeric(Year), y = CPI)) + geom_point() +
 hist(cpiDataTall$CPI, xlab="Consumer Price Index", main="Histogram of CPI Data")
 
 # Table of CPI over time
-cpiYearly <- cpiDataTall %>% group_by(Year) %>% dplyr::summarize(meanCPI = mean(CPI, na.rm=TRUE), medianCPI = median(CPI, na.rm=TRUE))
+cpiYearly <- cpiDataTall %>% group_by(Year) %>% dplyr::summarize(meanCPI = mean(CPI, na.rm=TRUE), medianCPI = median(CPI, na.rm=TRUE), minCPI = min(CPI, na.rm = TRUE), maxCPI = max(CPI, na.rm = TRUE), sdCPI = sd(CPI, na.rm = TRUE), skewnessCPI = moments::skewness(CPI, na.rm=TRUE), kurtosisCPI = moments::kurtosis(CPI, na.rm=TRUE))
 kable(cpiYearly)
 
 # Plot distribution of nextMonthCPI variable
@@ -441,7 +441,7 @@ ggplot(nfciFiltered, aes(x = as.numeric(year), y = NFCI)) + geom_point() +
 hist(nfciFiltered$NFCI, main="Histogram of NFCI", xlab="NFCI")
 
 # Create Summary Statistics Table for NFCI
-nfciTable <- nfciFiltered %>% group_by(year) %>% dplyr::summarize(meanNFCI = mean(NFCI), medianNFCI = median(NFCI))
+nfciTable <- nfciFiltered %>% group_by(year) %>% dplyr::summarize(meanNFCI = mean(NFCI), medianNFCI = median(NFCI), minNFCI = min(NFCI), maxNFCI = max(NFCI), sdNFCI = sd(NFCI), skewnessNFCI = skewness(NFCI), kurtosisNFCI = kurtosis(NFCI))
 kable(nfciTable)
 
 # Graph ANFCI over time
@@ -452,7 +452,7 @@ ggplot(nfciFiltered, aes(x = as.numeric(year), y = ANFCI)) + geom_point() +
 hist(nfciFiltered$ANFCI, main="Histogram of ANFCI", xlab = "ANFCI")
 
 # Create summary statistics table for ANFCI
-anfciTable <- nfciFiltered %>% group_by(year) %>% dplyr::summarize(meanANFCI = mean(ANFCI), medianANFCI = median(ANFCI))
+anfciTable <- nfciFiltered %>% group_by(year) %>% dplyr::summarize(meanANFCI = mean(ANFCI), medianANFCI = median(ANFCI), minANFCI = min(ANFCI), maxANFCI = max(ANFCI), sdANFCI = sd(ANFCI), skewnessANFCI = skewness(ANFCI), kurtosisANFCI = kurtosis(ANFCI))
 kable(anfciTable)
 ```
 
